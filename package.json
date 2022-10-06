@@ -1,0 +1,24 @@
+{
+  "name": "arca-chatbot-pedidos",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EinarLop/Arca-Chat-Pedidos.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EinarLop/Arca-Chat-Pedidos/issues"
+  },
+  "homepage": "https://github.com/EinarLop/Arca-Chat-Pedidos#readme",
+  "dependencies": {
+    "express": "^4.18.1",
+    "nodemon": "^2.0.20"
+  }
+}
