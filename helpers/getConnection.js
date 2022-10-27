@@ -3,12 +3,12 @@ const Connection = require("tedious").Connection;
 const configConnection = {
   authentication: {
     options: {
-      userName: "usrteam1", // update me
-      password: "XW9ZEzoa", // update me
+      userName: "", // update me
+      password: "", // update me
     },
     type: "default",
   },
-  server: "sqlserverdac.database.windows.net", // update me
+  server: "", // update me
   options: {
     database: "databaseac", //update me
     encrypt: true,
