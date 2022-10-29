@@ -29,7 +29,7 @@ app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
-app.listen(3001 || process.env.PORT,()=>{
+app.listen(3000 || process.env.PORT,()=>{
     console.log("jala")
 });
 
