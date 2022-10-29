@@ -19,7 +19,7 @@
     "tedious": "^15.1.0"
   },
   "description": "whatsapp chatbot",
-  "main": "index.js",
+  "main": "app.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EinarLop/Arca-Chatbot-Pedidos.git"
