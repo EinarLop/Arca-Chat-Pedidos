@@ -14,9 +14,8 @@ const messagesController = require("./controllers/messages.controller");
 
 var app = express();
 
-// view engine setup
-// app.set("views", path.join(__dirname, "views"));
-// app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -27,12 +26,8 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/messages", messagesController);
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.render("index", { title: "Express" });
 });
-
-// app.listen(3000 || process.env.PORT, () => {
-//   console.log("jala");
-// });
 
 app.get("/webhook", (req, res) => {
   let mode = req.query["hub.mode"];
