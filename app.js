@@ -5,10 +5,18 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
 const axios = require("axios");
-require("dotenv").config;
+require("dotenv").config({path: './.env'});
+const WhatsappCloudAPI = require('whatsappcloudapi_wrapper');
+const Whatsapp = new WhatsappCloudAPI({
+    accessToken: process.env.TOKEN,
+    senderPhoneNumberId: process.env.SENDER_PHONE,
+    WABA_ID: process.env.WABA_ID, 
+    graphAPIVersion: 'v13.0'
+});
 
 const token = process.env.TOKEN;
 const mytoken = process.env.MYTOKEN;
+//const mytoken = "miToken";
 
 const messagesController = require("./controllers/messages.controller");
 
@@ -27,6 +35,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/messages", messagesController);
 
 app.get("/", (req, res) => {
+  console.log(mytoken)
   res.send("Hello World!");
 });
 
@@ -35,6 +44,10 @@ app.get("/", (req, res) => {
 // });
 
 app.get("/webhook", (req, res) => {
+  const test = require('dotenv').config()
+  console.log(test)
+  console.log("llego a webhook")
+  console.log(mytoken)
   let mode = req.query["hub.mode"];
   let challenge = req.query["hub.challenge"];
   let token = req.query["hub.verify_token"];
@@ -42,13 +55,97 @@ app.get("/webhook", (req, res) => {
   if (mode && token) {
     if (mode === "subscribe" && token === mytoken) {
       res.status(200).send(challenge);
+      console.log("algo salio bien")
     } else {
+      console.log("algo salio mal")
       res.status(403);
     }
   }
 });
 
-app.post("/webhook", (req, res) => {
+app.get('/meta_wa_callbackurl', (req, res) => {
+  try {
+      console.log('GET: Someone is pinging me!');
+
+      let mode = req.query['hub.mode'];
+      let token = req.query['hub.verify_token'];
+      let challenge = req.query['hub.challenge'];
+
+      if (
+          mode &&
+          token &&
+          mode === 'subscribe' &&
+          mytoken === token
+      ) {
+          return res.status(200).send(challenge);
+      } else {
+          return res.sendStatus(403);
+      }
+  } catch (error) {
+      console.error({error})
+      return res.sendStatus(500);
+  }
+});
+/*
+app.post('/meta_wa_callbackurl', (req, res) => {
+  console.log("si me llego el mensaje")
+  let phone_no_id =
+    req.body.entry[0].changes[0].value.metadata.phone_number_id;
+  let from = req.body.entry[0].changes[0].value.messages[0].from;
+  axios({
+    method: "POST",
+    url:
+      "https://graph.facebook.com/v13.0/" +
+      phone_no_id +
+      "/messages?access_token=" +
+      token,
+    data: {
+      messaging_product: "whatsapp",
+      to: from,
+      text: {
+        body: "Respuesta",
+      },
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}),
+*/
+app.post("/callback_url", (req, res) => {
+  console.log("Si llego el mensaje");
+});
+
+async function sendMessage(phone_no_id, from){
+  await Whatsapp.sendSimpleButtons({
+    message: `Hey ${from}, \nYou are speaking to a chatbot.\nWhat do you want to do next?`,
+    recipientPhone: phone_no_id, 
+    listOfButtons: [
+        {
+            title: 'View some products',
+            id: 'see_categories',
+        },
+        {
+            title: 'Speak to a human',
+            id: 'speak_to_human',
+        },
+    ],
+});
+}
+
+/*
+data:{
+          messaging_product: "whatsapp",
+          "recipient_type": "individual",
+          "to": phone_no_id,
+          "type": "text",
+          "text": {
+              "body": "your-message-content"
+          }
+      },
+*/
+app.post("/meta_wa_callbackurl", (req, res) => {
+  console.log("webhook hola")
   let body_param = req.body;
 
   console.log(JSON.stringify(body_param, null, 2));
@@ -56,34 +153,48 @@ app.post("/webhook", (req, res) => {
   if (
     body_param.entry &&
     body_param.entry[0].changes &&
-    body_param.entry[0].changes[0].value.message &&
-    body_param.entry[0].changes[0].value.message[0]
+    body_param.entry[0].changes[0].value.messages[0]
   ) {
-    let phone_no_id =
-      req.body.entry[0].changes[0].value.metadata.phone_number_id;
+    console.log("si jala")
+
+    let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
+    console.log(req.body.entry[0].changes[0].value.messages[0].from)
     let from = req.body.entry[0].changes[0].value.messages[0].from;
     let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
-
+    console.log("phone id");
+    console.log(phone_no_id);
+    console.log("from");
+    console.log(from);
+    console.log(token)
+    //sendMessage(phone_no_id, from);
+    
+    
     axios({
       method: "POST",
-      url:
-        "https://graph.facebook.com/v13.0/" +
-        phone_no_id +
-        "/messages?access_token=" +
-        token,
+      url: "https://graph.facebook.com/v13.0/" + phone_no_id + "/messages?access_token=" + token,
       data: {
-        messagin_product: "whatsapp",
-        to: from,
-        text: {
-          body: "Hi, im Alex",
-        },
+        "messaging_product": "whatsapp", 
+        "to": from, 
+        "type": "template", 
+        "template": { 
+          "name": "hello_world", 
+          "language": { 
+            "code": "en_US" 
+          } 
+        } 
       },
       headers: {
         "Content-Type": "application/json",
       },
-    });
+    }).then(function ({data}) {
+      console.log('Success ' + JSON.stringify(data))
+    })
+    .catch(function (error) {
+      console.log('Error ' + error.message)
+    })
     res.sendStatus(200);
   } else {
+    console.log("no jala")
     res.sendStatus(403);
   }
 });
