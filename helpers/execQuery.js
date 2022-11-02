@@ -2,7 +2,6 @@ const getConnection = require("./getConnection");
 const Request = require("tedious").Request;
 
 const execQuery = (query, parameters, callbackEvent) => {
-  console.log("Inside execQuery");
   const command = new Promise((resolve, reject) => {
     getConnection()
       .connect()
@@ -39,19 +38,16 @@ const execQuery = (query, parameters, callbackEvent) => {
         reject(error);
       });
   });
-  console.log("command", command);
   return command;
 };
 
 const execWriteCommand = (query, parameters) => {
-  console.log("inside execWriteCommand ");
   const callbackEvent = (request, close, resolve) => {
     request.on("requestCompleted", (rowCount, more) => {
       close();
       resolve(rowCount, more);
     });
   };
-
   return execQuery(query, parameters, callbackEvent);
 };
 
@@ -59,6 +55,7 @@ const execReadCommand = (query, parameters = null) => {
   const callbackEvent = (request, close, resolve) => {
     request.on("doneInProc", (rowCount, more, rows) => {
       const responseRows = [];
+      console.log([rowCount, more, rows]);
 
       if (rows)
         rows.forEach((row) => {

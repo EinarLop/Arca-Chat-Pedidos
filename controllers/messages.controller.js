@@ -40,7 +40,7 @@ messagesRoute.get("/read", async (req, res) => {
   messagesModel
     .allMessages()
     .then((data) => {
-      console.log(data);
+      console.log();
       res.status(200).json({ data });
     })
     .catch((error) => {
