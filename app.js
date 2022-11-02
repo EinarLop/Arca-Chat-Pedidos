@@ -17,7 +17,6 @@ const Whatsapp = new WhatsappCloudAPI({
 
 const token = process.env.TOKEN;
 const mytoken = process.env.MYTOKEN;
-//const mytoken = "miToken";
 
 const messagesController = require("./controllers/messages.controller");
 
@@ -35,7 +34,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/messages", messagesController);
 
-function buildButtonsMessagePayload(header, body, buttonTexts){
+function buildButtonsMessagePayload(header, body, buttonTexts, phone_number){
   // this should return the json we send to the user
   let i = 0;
   let len = buttonTexts.length;
@@ -51,7 +50,7 @@ function buildButtonsMessagePayload(header, body, buttonTexts){
       buttons.push(button)
       i++;
   }
-  return {
+  interactive = {
     "type": "button",
       "header": {
         "type": "text",
@@ -63,7 +62,15 @@ function buildButtonsMessagePayload(header, body, buttonTexts){
       "action":{
           "buttons": buttons
       }
-  }
+  };
+  
+  
+  return { 
+    "messaging_product": "whatsapp", 
+    "to": phone_number, 
+    "type": "interactive",
+    "interactive": interactive
+  };
 }
 
 app.get("/", (req, res) => {
@@ -118,35 +125,6 @@ app.get('/meta_wa_callbackurl', (req, res) => {
       return res.sendStatus(500);
   }
 });
-/*
-app.post('/meta_wa_callbackurl', (req, res) => {
-  console.log("si me llego el mensaje")
-  let phone_no_id =
-    req.body.entry[0].changes[0].value.metadata.phone_number_id;
-  let from = req.body.entry[0].changes[0].value.messages[0].from;
-  axios({
-    method: "POST",
-    url:
-      "https://graph.facebook.com/v13.0/" +
-      phone_no_id +
-      "/messages?access_token=" +
-      token,
-    data: {
-      messaging_product: "whatsapp",
-      to: from,
-      text: {
-        body: "Respuesta",
-      },
-    },
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-}),
-*/
-app.post("/callback_url", (req, res) => {
-  console.log("Si llego el mensaje");
-});
 
 async function sendMessage(phone_no_id, from){
   await Whatsapp.sendSimpleButtons({
@@ -165,17 +143,18 @@ async function sendMessage(phone_no_id, from){
 });
 }
 
-/*
-data:{
-          messaging_product: "whatsapp",
-          "recipient_type": "individual",
-          "to": phone_no_id,
-          "type": "text",
-          "text": {
-              "body": "your-message-content"
-          }
-      },
-*/
+function getAxiosConfig(phone_no_id, data){
+  return {
+    method: 'post',
+    url: 'https://graph.facebook.com/v13.0/' + phone_no_id + '/messages',
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Authorization': 'Bearer ' + token
+    },
+    data : data
+  };
+}
+
 app.post("/meta_wa_callbackurl", (req, res) => {
   console.log("webhook hola")
   let body_param = req.body;
@@ -193,34 +172,11 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     console.log(req.body.entry[0].changes[0].value.messages[0].from)
     let from = req.body.entry[0].changes[0].value.messages[0].from;
     let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
-    console.log("phone id");
-    console.log(phone_no_id);
-    console.log("from");
-    console.log(from);
-    console.log(token);
-    let otro_phone = "52" + from.substring(3);
-    let data2 = buildButtonsMessagePayload("header", "mensaje", ["yes", "no"]);
-    console.log(data2);
-    //sendMessage(phone_no_id, from);
-    var data_template = '{ "messaging_product": "whatsapp", "to": ' + otro_phone + ', "type": "template", "template": { "name": "hello_world", "language": { "code": "en_US" } } }'
-    var data_text = '{ "messaging_product": "whatsapp", "to": "526674795330", "type": "text", "text": { "body": "hello_world" } }';
-    var data_boton = '{ "messaging_product": "whatsapp", "to": "526674795330", "type": "interactive", "interactive": { "type": "button", "header": {"type": "text", "text": "chica que dices"}, "body": {"text": "mensaje aqui"}, "action": {"buttons": [{"type": "reply", "reply": {"id": "0", "title": "yes"}}]} } }';
-    var data_botones = { "messaging_product": "whatsapp", 
-    "to": "526674795330", 
-    "type": "interactive",
-    "interactive": data2
-  };
-    var config = {
-      method: 'post',
-      url: 'https://graph.facebook.com/v13.0/' + phone_no_id + '/messages',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': 'Bearer ' + token
-      },
-      data : data_botones
-    };
-
+    let from_correct_lada = "52" + from.substring(3);
     
+    var data_botones = buildButtonsMessagePayload("header", "mensaje", ["yes", "no"], from_correct_lada);
+    var config = getAxiosConfig(phone_no_id, data_botones)
+    console.log(config)
     
     axios(config).then(function ({data}) {
       console.log('Success ' + JSON.stringify(data))
