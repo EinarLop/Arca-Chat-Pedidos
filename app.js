@@ -35,6 +35,37 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/messages", messagesController);
 
+function buildButtonsMessagePayload(header, body, buttonTexts){
+  // this should return the json we send to the user
+  let i = 0;
+  let len = buttonTexts.length;
+  let buttons = []
+  for (; i < len; ) {
+      var button = {
+          "type": "reply",
+          "reply": {
+              "id": i,
+              "title": buttonTexts[i]
+          }
+      }
+      buttons.push(button)
+      i++;
+  }
+  return {
+    "type": "button",
+      "header": {
+        "type": "text",
+          "text": header
+      },
+      "body": {
+          "text": body
+      },
+      "action":{
+          "buttons": buttons
+      }
+  }
+}
+
 app.get("/", (req, res) => {
   console.log(mytoken)
   res.send("Hello World!");
@@ -168,8 +199,17 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     console.log(from);
     console.log(token);
     let otro_phone = "52" + from.substring(3);
+    let data2 = buildButtonsMessagePayload("header", "mensaje", ["yes", "no"]);
+    console.log(data2);
     //sendMessage(phone_no_id, from);
-    var data = '{ "messaging_product": "whatsapp", "to": ' + otro_phone + ', "type": "template", "template": { "name": "hello_world", "language": { "code": "en_US" } } }'
+    var data_template = '{ "messaging_product": "whatsapp", "to": ' + otro_phone + ', "type": "template", "template": { "name": "hello_world", "language": { "code": "en_US" } } }'
+    var data_text = '{ "messaging_product": "whatsapp", "to": "526674795330", "type": "text", "text": { "body": "hello_world" } }';
+    var data_boton = '{ "messaging_product": "whatsapp", "to": "526674795330", "type": "interactive", "interactive": { "type": "button", "header": {"type": "text", "text": "chica que dices"}, "body": {"text": "mensaje aqui"}, "action": {"buttons": [{"type": "reply", "reply": {"id": "0", "title": "yes"}}]} } }';
+    var data_botones = { "messaging_product": "whatsapp", 
+    "to": "526674795330", 
+    "type": "interactive",
+    "interactive": data2
+  };
     var config = {
       method: 'post',
       url: 'https://graph.facebook.com/v13.0/' + phone_no_id + '/messages',
@@ -177,11 +217,10 @@ app.post("/meta_wa_callbackurl", (req, res) => {
         'Content-Type': 'application/json', 
         'Authorization': 'Bearer ' + token
       },
-      data : data
+      data : data_botones
     };
 
-    //data2 = buildButtonsMessagePayload("header", "mensaje", ["yes", "no"]);
-    //console.log(data2)
+    
     
     axios(config).then(function ({data}) {
       console.log('Success ' + JSON.stringify(data))
