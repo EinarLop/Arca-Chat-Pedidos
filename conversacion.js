@@ -14,7 +14,7 @@ pedido = "Productos: " + productos + "\nTotal: " + total + "\n Paga en efectivo 
 
 confirmacion = "¿Esta todo correcto?"
 
-function buildButtonsMessagePayload(header, body, buttonTexts){
+export function buildButtonsMessagePayload(header, body, buttonTexts){
     // this should return the json we send to the user
     let i = 0;
     let len = buttonTexts.length;
@@ -43,7 +43,7 @@ function buildButtonsMessagePayload(header, body, buttonTexts){
     }
 }
 
-function buildTextMessage(header, body){
+export function buildTextMessage(header, body){
     return {
         text: {
             "body": body

@@ -1,3 +1,4 @@
+//import {buildButtonsMessagePayload, buildTextMessage} from './conversacion.js'
 var createError = require("http-errors");
 var express = require("express");
 var path = require("path");
@@ -155,7 +156,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     body_param.entry[0].changes &&
     body_param.entry[0].changes[0].value.messages[0]
   ) {
-    console.log("si jala")
+    console.log("si jala");
 
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from)
@@ -165,28 +166,24 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     console.log(phone_no_id);
     console.log("from");
     console.log(from);
-    console.log(token)
+    console.log(token);
+    let otro_phone = "52" + from.substring(3);
     //sendMessage(phone_no_id, from);
-    
-    
-    axios({
-      method: "POST",
-      url: "https://graph.facebook.com/v13.0/" + phone_no_id + "/messages?access_token=" + token,
-      data: {
-        "messaging_product": "whatsapp", 
-        "to": from, 
-        "type": "template", 
-        "template": { 
-          "name": "hello_world", 
-          "language": { 
-            "code": "en_US" 
-          } 
-        } 
+    var data = '{ "messaging_product": "whatsapp", "to": ' + otro_phone + ', "type": "template", "template": { "name": "hello_world", "language": { "code": "en_US" } } }'
+    var config = {
+      method: 'post',
+      url: 'https://graph.facebook.com/v13.0/' + phone_no_id + '/messages',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': 'Bearer ' + token
       },
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then(function ({data}) {
+      data : data
+    };
+
+    //data2 = buildButtonsMessagePayload("header", "mensaje", ["yes", "no"]);
+    //console.log(data2)
+    
+    axios(config).then(function ({data}) {
       console.log('Success ' + JSON.stringify(data))
     })
     .catch(function (error) {
