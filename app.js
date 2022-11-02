@@ -34,6 +34,17 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/messages", messagesController);
 
+function buildTextMessage(phone_number, body){
+  return { 
+    "messaging_product": "whatsapp", 
+    "to": phone_number, 
+    "type": "text",
+    "text": {
+      "body": body
+    }
+  };
+}
+
 function buildButtonsMessagePayload(header, body, buttonTexts, phone_number){
   // this should return the json we send to the user
   let i = 0;
@@ -126,22 +137,7 @@ app.get('/meta_wa_callbackurl', (req, res) => {
   }
 });
 
-async function sendMessage(phone_no_id, from){
-  await Whatsapp.sendSimpleButtons({
-    message: `Hey ${from}, \nYou are speaking to a chatbot.\nWhat do you want to do next?`,
-    recipientPhone: phone_no_id, 
-    listOfButtons: [
-        {
-            title: 'View some products',
-            id: 'see_categories',
-        },
-        {
-            title: 'Speak to a human',
-            id: 'speak_to_human',
-        },
-    ],
-});
-}
+
 
 function getAxiosConfig(phone_no_id, data){
   return {
@@ -164,7 +160,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
   if (
     body_param.entry &&
     body_param.entry[0].changes &&
-    body_param.entry[0].changes[0].value.messages[0]
+    body_param.entry[0].changes[0].value.messages[0] &&
+    body_param.entry[0].changes[0].value.messages[0].type == "text"
   ) {
     console.log("si jala");
 
@@ -174,7 +171,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
     let from_correct_lada = "52" + from.substring(3);
     
-    var data_botones = buildButtonsMessagePayload("header", "mensaje", ["yes", "no"], from_correct_lada);
+    var data_botones = buildButtonsMessagePayload("Hola! Soy Arcabot", "¿Necesitas hablar con un humano?", ["Si", "No"], from_correct_lada);
     var config = getAxiosConfig(phone_no_id, data_botones)
     console.log(config)
     
@@ -185,7 +182,38 @@ app.post("/meta_wa_callbackurl", (req, res) => {
       console.log('Error ' + error.message)
     })
     res.sendStatus(200);
-  } else {
+  } else if (
+    body_param.entry &&
+    body_param.entry[0].changes &&
+    body_param.entry[0].changes[0].value.messages[0] &&
+    body_param.entry[0].changes[0].value.messages[0].type == "interactive" && 
+    body_param.entry[0].changes[0].value.messages[0].interactive.type == "button_reply"
+  ){
+    console.log("si jala");
+
+    let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
+    console.log(req.body.entry[0].changes[0].value.messages[0].from)
+    let from = req.body.entry[0].changes[0].value.messages[0].from;
+    let msg_body = req.body.entry[0].changes[0].value.messages[0].interactive.button_reply.title;
+    let from_correct_lada = "52" + from.substring(3);
+    var texto = "Sigo siendo un bot. En que te puedo ayudar?"
+    if (msg_body == "Si"){
+      var texto = "En seguida te atendera un humano."
+    }
+    data = buildTextMessage(from_correct_lada, texto)
+    //var data_botones = buildButtonsMessagePayload("respuesta", "escogiste " + msg_body, ["yes", "no"], from_correct_lada);
+    var config = getAxiosConfig(phone_no_id, data)
+    console.log(config)
+    
+    axios(config).then(function ({data}) {
+      console.log('Success ' + JSON.stringify(data))
+    })
+    .catch(function (error) {
+      console.log('Error ' + error.message)
+    })
+    res.sendStatus(200);
+  }
+  else {
     console.log("no jala")
     res.sendStatus(403);
   }
