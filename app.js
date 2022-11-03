@@ -4,6 +4,7 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+const CustomerSession = new Map();
 
 const axios = require("axios");
 require("dotenv").config({path: './.env'});
@@ -21,16 +22,37 @@ const mytoken = process.env.MYTOKEN;
 const messagesController = require("./controllers/messages.controller");
 var app = express();
 
-// app.set("views", path.join(__dirname, "views"));
-// app.set("view engine", "ejs");
-
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-// app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/messages", messagesController);
+
+function isTextMessage(body_param){
+  if (
+    body_param.entry &&
+    body_param.entry[0].changes &&
+    body_param.entry[0].changes[0].value.messages[0] &&
+    body_param.entry[0].changes[0].value.messages[0].type == "text"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isReplyMessage(body_param){
+  if (
+    body_param.entry &&
+    body_param.entry[0].changes &&
+    body_param.entry[0].changes[0].value.messages[0] &&
+    body_param.entry[0].changes[0].value.messages[0].type == "interactive" && 
+    body_param.entry[0].changes[0].value.messages[0].interactive.type == "button_reply"
+  ) {
+    return true;
+  }
+  return false;
+}
 
 function buildTextMessage(phone_number, body){
   return { 
@@ -151,12 +173,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
 
   console.log(JSON.stringify(body_param, null, 2));
 
-  if (
-    body_param.entry &&
-    body_param.entry[0].changes &&
-    body_param.entry[0].changes[0].value.messages[0] &&
-    body_param.entry[0].changes[0].value.messages[0].type == "text"
-  ) {
+  if (isTextMessage(body_param)) {
     console.log("si jala");
 
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
@@ -176,13 +193,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
       console.log('Error ' + error.message)
     })
     res.sendStatus(200);
-  } else if (
-    body_param.entry &&
-    body_param.entry[0].changes &&
-    body_param.entry[0].changes[0].value.messages[0] &&
-    body_param.entry[0].changes[0].value.messages[0].type == "interactive" && 
-    body_param.entry[0].changes[0].value.messages[0].interactive.type == "button_reply"
-  ){
+  } else if (isReplyMessage(body_param)){
     console.log("si jala");
 
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
@@ -195,7 +206,6 @@ app.post("/meta_wa_callbackurl", (req, res) => {
       var texto = "En seguida te atendera un humano."
     }
     data = buildTextMessage(from_correct_lada, texto)
-    //var data_botones = buildButtonsMessagePayload("respuesta", "escogiste " + msg_body, ["yes", "no"], from_correct_lada);
     var config = getAxiosConfig(phone_no_id, data)
     console.log(config)
     
