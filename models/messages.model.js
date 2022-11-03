@@ -12,7 +12,7 @@ const addMessage = (messageData) => {
     display_phone_number,
   } = messageData;
   const query = `
-        INSERT INTO [dbo].[Messages] (phone_number_id, phone_from, body, id, display_phone_number) VALUES (@phone_number_id,@phone_from,@body,@id,@display_phone_number)
+        INSERT INTO [dbo].[Messages01] (phone_number_id, phone_from, body, id, display_phone_number) VALUES (@phone_number_id,@phone_from,@body,@id,@display_phone_number)
         `;
 
   const parameters = [
@@ -33,7 +33,7 @@ const addMessage = (messageData) => {
 
 const allMessages = () => {
   const query = `
-        SELECT id FROM [dbo].[Messages]
+        SELECT * FROM [dbo].[Messages01]
     `;
   return execQuery.execReadCommand(query);
 };
