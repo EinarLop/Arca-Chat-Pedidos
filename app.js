@@ -182,15 +182,20 @@ function sendMessage(phone_no_id, payload){
   })
 }
 
+function sendMessagePromise(phone_no_id, payload){
+  var config = getAxiosConfig(phone_no_id, payload)
+    
+  return axios(config)
+}
+
 app.post("/meta_wa_callbackurl", (req, res) => {
-  console.log("webhook hola")
-  console.log("se actualiza")
+  console.log("llego un webhook")
   let body_param = req.body;
 
   console.log(JSON.stringify(body_param, null, 2));
 
   if (isTextMessage(body_param)) {
-    console.log("es mensaje de texto")
+    console.log("text message")
     console.log(CustomerSession.get("state"))
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from)
@@ -200,12 +205,10 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     var payload = ""
 
     if (msg_body == "terminar sesion"){
-      console.log("terminamos la sesion")
       CustomerSession.set("state", 0)
       payload = buildTextMessage(from_correct_lada, "Gracias por comprar con nosotros, hasta la próxima!");
       sendMessage(phone_no_id, payload);
     } else if (CustomerSession.get("state") == 0){
-      console.log("estamos en estado 1")
       CustomerSession.set("state", 1)
       payload = buildButtonsMessagePayload("Hola! Soy Arcabot", "¿Quieres ver el catálogo de productos?", ["Ver catálogo", "Cancelar"], from_correct_lada);
       console.log(payload)
@@ -214,7 +217,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
 
     res.sendStatus(200);
   } else if (isReplyMessage(body_param)){
-
+    console.log("reply message")
+    console.log(CustomerSession.get("state"))
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from)
     let from = req.body.entry[0].changes[0].value.messages[0].from;
@@ -227,13 +231,21 @@ app.post("/meta_wa_callbackurl", (req, res) => {
         CustomerSession.set("state", 2)
         msg = "Llevandote al catálogo."
         payload = buildTextMessage(from_correct_lada, msg)
-        sendMessage(phone_no_id, payload);
-        msg = "Listo! Resumen del pedido: \n- 1 paq. Coca - Cola 600ml PET 12pzas $245"
-        payload = buildTextMessage(from_correct_lada, msg)
-        sendMessage(phone_no_id, payload);
-        payload = buildButtonsMessagePayload("Confirma tu pedido", "¿Está todo correcto?", ["Enviar pedido", "Modificar pedido", "Cancelar"], from_correct_lada)
-        console.log(payload)
-        sendMessage(phone_no_id, payload);
+        sendMessagePromise(phone_no_id, payload).then(function ({data}) {
+          msg = "Listo! Resumen del pedido: \n- 1 paq. Coca - Cola 600ml PET 12pzas $245"
+          payload = buildTextMessage(from_correct_lada, msg)
+          sendMessagePromise(phone_no_id, payload).then(function ({data}) {
+            payload = buildButtonsMessagePayload("Confirma tu pedido", "¿Está todo correcto?", ["Enviar pedido", "Modificar pedido", "Cancelar"], from_correct_lada)
+            sendMessage(phone_no_id, payload);
+            console.log('Success ' + JSON.stringify(data))
+          })
+          .catch(function (error) {
+            console.log('Error ' + error.message)
+          })
+        })
+        .catch(function (error) {
+          console.log('Error ' + error.message)
+        })
       }
     } else if (CustomerSession.get("state") == 2) {
       if (msg_body == "Enviar pedido"){
@@ -246,7 +258,6 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     res.sendStatus(200);
   }
   else {
-    console.log("no jala")
     res.sendStatus(403);
   }
 });
