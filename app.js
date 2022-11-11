@@ -9,13 +9,6 @@ CustomerSession.set("state", 0)
 
 const axios = require("axios");
 require("dotenv").config({path: './.env'});
-const WhatsappCloudAPI = require('whatsappcloudapi_wrapper');
-const Whatsapp = new WhatsappCloudAPI({
-    accessToken: process.env.TOKEN,
-    senderPhoneNumberId: process.env.SENDER_PHONE,
-    WABA_ID: process.env.WABA_ID, 
-    graphAPIVersion: 'v13.0'
-});
 
 const token = process.env.TOKEN;
 const mytoken = process.env.MYTOKEN;
@@ -113,26 +106,6 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.get("/webhook", (req, res) => {
-  const test = require('dotenv').config()
-  console.log(test)
-  console.log("llego a webhook")
-  console.log(mytoken)
-  let mode = req.query["hub.mode"];
-  let challenge = req.query["hub.challenge"];
-  let token = req.query["hub.verify_token"];
-
-  if (mode && token) {
-    if (mode === "subscribe" && token === mytoken) {
-      res.status(200).send(challenge);
-      console.log("algo salio bien")
-    } else {
-      console.log("algo salio mal")
-      res.status(403);
-    }
-  }
-});
-
 app.get('/meta_wa_callbackurl', (req, res) => {
   try {
       console.log('GET: Someone is pinging me!');
@@ -189,7 +162,8 @@ function sendMessagePromise(phone_no_id, payload){
 }
 
 app.post("/meta_wa_callbackurl", (req, res) => {
-  console.log("llego un webhook")
+  console.log("llego un webhook. estado:")
+  console.log(CustomerSession.get("state"))
   let body_param = req.body;
 
   console.log(JSON.stringify(body_param, null, 2));
@@ -246,12 +220,23 @@ app.post("/meta_wa_callbackurl", (req, res) => {
         .catch(function (error) {
           console.log('Error ' + error.message)
         })
+        // Cancelar ver catalogo
+      } else if (msg_body == "Cancelar") {
+        CustomerSession.set("state", 0)
+        payload = buildTextMessage(from_correct_lada, "Gracias por comprar con nosotros, hasta la próxima!");
+        sendMessage(phone_no_id, payload);
       }
     } else if (CustomerSession.get("state") == 2) {
       if (msg_body == "Enviar pedido"){
         CustomerSession.set("state", 0);
         msg = "Pedido enviado!";
         payload = buildTextMessage(from_correct_lada, msg);
+        sendMessage(phone_no_id, payload);
+        // cancerlar pedido
+      } else if (msg_body == "Cancelar") {
+        CustomerSession.set("state", 0);
+        console.log(CustomerSession.get("state"));
+        payload = buildTextMessage(from_correct_lada, "Pedido cancelado. Gracias por comprar con nosotros, hasta la próxima!");
         sendMessage(phone_no_id, payload);
       }
     }
@@ -262,12 +247,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
   }
 });
 
-// catch 404 and forward to error handler
-// app.use(function (req, res, next) {
-//   next(createError(404));
-// });
-
-// error handler
+// Error handler
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
