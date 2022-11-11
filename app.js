@@ -161,6 +161,27 @@ function sendMessagePromise(phone_no_id, payload){
   return axios(config)
 }
 
+function llevarACatalogo(from_correct_lada, phone_no_id){
+  CustomerSession.set("state", 2)
+  msg = "Llevandote al catálogo."
+  payload = buildTextMessage(from_correct_lada, msg)
+  sendMessagePromise(phone_no_id, payload).then(function ({data}) {
+    msg = "Listo! Resumen del pedido: \n- 1 paq. Coca - Cola 600ml PET 12pzas $245"
+    payload = buildTextMessage(from_correct_lada, msg)
+    sendMessagePromise(phone_no_id, payload).then(function ({data}) {
+      payload = buildButtonsMessagePayload("Confirma tu pedido", "¿Está todo correcto?", ["Enviar pedido", "Modificar pedido", "Cancelar"], from_correct_lada)
+      sendMessage(phone_no_id, payload);
+      console.log('Success ' + JSON.stringify(data))
+    })
+    .catch(function (error) {
+      console.log('Error ' + error.message)
+    })
+  })
+  .catch(function (error) {
+    console.log('Error ' + error.message)
+  })
+}
+
 app.post("/meta_wa_callbackurl", (req, res) => {
   console.log("llego un webhook. estado:")
   console.log(CustomerSession.get("state"))
@@ -202,24 +223,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     var msg = ""
     if (CustomerSession.get("state") == 1) {
       if (msg_body == "Ver catálogo"){
-        CustomerSession.set("state", 2)
-        msg = "Llevandote al catálogo."
-        payload = buildTextMessage(from_correct_lada, msg)
-        sendMessagePromise(phone_no_id, payload).then(function ({data}) {
-          msg = "Listo! Resumen del pedido: \n- 1 paq. Coca - Cola 600ml PET 12pzas $245"
-          payload = buildTextMessage(from_correct_lada, msg)
-          sendMessagePromise(phone_no_id, payload).then(function ({data}) {
-            payload = buildButtonsMessagePayload("Confirma tu pedido", "¿Está todo correcto?", ["Enviar pedido", "Modificar pedido", "Cancelar"], from_correct_lada)
-            sendMessage(phone_no_id, payload);
-            console.log('Success ' + JSON.stringify(data))
-          })
-          .catch(function (error) {
-            console.log('Error ' + error.message)
-          })
-        })
-        .catch(function (error) {
-          console.log('Error ' + error.message)
-        })
+        llevarACatalogo(from_correct_lada, phone_no_id);
         // Cancelar ver catalogo
       } else if (msg_body == "Cancelar") {
         CustomerSession.set("state", 0)
@@ -233,6 +237,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
         payload = buildTextMessage(from_correct_lada, msg);
         sendMessage(phone_no_id, payload);
         // cancerlar pedido
+      } else if (msg_body == "Modificar pedido") {
+        llevarACatalogo(from_correct_lada, phone_no_id);
       } else if (msg_body == "Cancelar") {
         CustomerSession.set("state", 0);
         console.log(CustomerSession.get("state"));
