@@ -4,16 +4,11 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+const CustomerSession = new Map();
+CustomerSession.set("state", 0)
 
 const axios = require("axios");
 require("dotenv").config({path: './.env'});
-const WhatsappCloudAPI = require('whatsappcloudapi_wrapper');
-const Whatsapp = new WhatsappCloudAPI({
-    accessToken: process.env.TOKEN,
-    senderPhoneNumberId: process.env.SENDER_PHONE,
-    WABA_ID: process.env.WABA_ID, 
-    graphAPIVersion: 'v13.0'
-});
 
 const token = process.env.TOKEN;
 const mytoken = process.env.MYTOKEN;
@@ -21,16 +16,39 @@ const mytoken = process.env.MYTOKEN;
 const messagesController = require("./controllers/messages.controller");
 var app = express();
 
-// app.set("views", path.join(__dirname, "views"));
-// app.set("view engine", "ejs");
-
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-// app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/messages", messagesController);
+
+function isTextMessage(body_param){
+  if (
+    body_param.entry &&
+    body_param.entry[0].changes &&
+    body_param.entry[0].changes[0].value.messages[0] &&
+    body_param.entry[0].changes[0].value.messages[0].type == "text"
+  ) {
+    console.log("si es mensaje de texto")
+    return true;
+  }
+  console.log("no es mensaje de texto")
+  return false;
+}
+
+function isReplyMessage(body_param){
+  if (
+    body_param.entry &&
+    body_param.entry[0].changes &&
+    body_param.entry[0].changes[0].value.messages[0] &&
+    body_param.entry[0].changes[0].value.messages[0].type == "interactive" && 
+    body_param.entry[0].changes[0].value.messages[0].interactive.type == "button_reply"
+  ) {
+    return true;
+  }
+  return false;
+}
 
 function buildTextMessage(phone_number, body){
   return { 
@@ -45,6 +63,7 @@ function buildTextMessage(phone_number, body){
 
 function buildButtonsMessagePayload(header, body, buttonTexts, phone_number){
   // this should return the json we send to the user
+  console.log("entro a la funcion")
   let i = 0;
   let len = buttonTexts.length;
   let buttons = []
@@ -87,26 +106,6 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.get("/webhook", (req, res) => {
-  const test = require('dotenv').config()
-  console.log(test)
-  console.log("llego a webhook")
-  console.log(mytoken)
-  let mode = req.query["hub.mode"];
-  let challenge = req.query["hub.challenge"];
-  let token = req.query["hub.verify_token"];
-
-  if (mode && token) {
-    if (mode === "subscribe" && token === mytoken) {
-      res.status(200).send(challenge);
-      console.log("algo salio bien")
-    } else {
-      console.log("algo salio mal")
-      res.status(403);
-    }
-  }
-});
-
 app.get('/meta_wa_callbackurl', (req, res) => {
   try {
       console.log('GET: Someone is pinging me!');
@@ -145,80 +144,116 @@ function getAxiosConfig(phone_no_id, data){
   };
 }
 
+function sendMessage(phone_no_id, payload){
+  var config = getAxiosConfig(phone_no_id, payload)
+    
+  axios(config).then(function ({data}) {
+    console.log('Success ' + JSON.stringify(data))
+  })
+  .catch(function (error) {
+    console.log('Error ' + error.message)
+  })
+}
+
+function sendMessagePromise(phone_no_id, payload){
+  var config = getAxiosConfig(phone_no_id, payload)
+    
+  return axios(config)
+}
+
+function llevarACatalogo(from_correct_lada, phone_no_id){
+  CustomerSession.set("state", 2)
+  msg = "Llevandote al catálogo."
+  payload = buildTextMessage(from_correct_lada, msg)
+  sendMessagePromise(phone_no_id, payload).then(function ({data}) {
+    msg = "Listo! Resumen del pedido: \n- 1 paq. Coca - Cola 600ml PET 12pzas $245"
+    payload = buildTextMessage(from_correct_lada, msg)
+    sendMessagePromise(phone_no_id, payload).then(function ({data}) {
+      payload = buildButtonsMessagePayload("Confirma tu pedido", "¿Está todo correcto?", ["Enviar pedido", "Modificar pedido", "Cancelar"], from_correct_lada)
+      sendMessage(phone_no_id, payload);
+      console.log('Success ' + JSON.stringify(data))
+    })
+    .catch(function (error) {
+      console.log('Error ' + error.message)
+    })
+  })
+  .catch(function (error) {
+    console.log('Error ' + error.message)
+  })
+}
+
 app.post("/meta_wa_callbackurl", (req, res) => {
-  console.log("webhook hola")
+  console.log("llego un webhook. estado:")
+  console.log(CustomerSession.get("state"))
   let body_param = req.body;
 
   console.log(JSON.stringify(body_param, null, 2));
 
-  if (
-    body_param.entry &&
-    body_param.entry[0].changes &&
-    body_param.entry[0].changes[0].value.messages[0] &&
-    body_param.entry[0].changes[0].value.messages[0].type == "text"
-  ) {
-    console.log("si jala");
-
+  if (isTextMessage(body_param)) {
+    console.log("text message")
+    console.log(CustomerSession.get("state"))
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from)
     let from = req.body.entry[0].changes[0].value.messages[0].from;
     let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
     let from_correct_lada = "52" + from.substring(3);
-    
-    var data_botones = buildButtonsMessagePayload("Hola! Soy Arcabot", "¿Necesitas hablar con un humano?", ["Si", "No"], from_correct_lada);
-    var config = getAxiosConfig(phone_no_id, data_botones)
-    console.log(config)
-    
-    axios(config).then(function ({data}) {
-      console.log('Success ' + JSON.stringify(data))
-    })
-    .catch(function (error) {
-      console.log('Error ' + error.message)
-    })
-    res.sendStatus(200);
-  } else if (
-    body_param.entry &&
-    body_param.entry[0].changes &&
-    body_param.entry[0].changes[0].value.messages[0] &&
-    body_param.entry[0].changes[0].value.messages[0].type == "interactive" && 
-    body_param.entry[0].changes[0].value.messages[0].interactive.type == "button_reply"
-  ){
-    console.log("si jala");
+    var payload = ""
 
+    if (msg_body == "terminar sesion"){
+      CustomerSession.set("state", 0)
+      payload = buildTextMessage(from_correct_lada, "Gracias por comprar con nosotros, hasta la próxima!");
+      sendMessage(phone_no_id, payload);
+    } else if (CustomerSession.get("state") == 0){
+      CustomerSession.set("state", 1)
+      payload = buildButtonsMessagePayload("Hola! Soy Arcabot", "¿Quieres ver el catálogo de productos?", ["Ver catálogo", "Cancelar"], from_correct_lada);
+      console.log(payload)
+      sendMessage(phone_no_id, payload);
+    }
+
+    res.sendStatus(200);
+  } else if (isReplyMessage(body_param)){
+    console.log("reply message")
+    console.log(CustomerSession.get("state"))
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from)
     let from = req.body.entry[0].changes[0].value.messages[0].from;
     let msg_body = req.body.entry[0].changes[0].value.messages[0].interactive.button_reply.title;
     let from_correct_lada = "52" + from.substring(3);
-    var texto = "Sigo siendo un bot. En que te puedo ayudar?"
-    if (msg_body == "Si"){
-      var texto = "En seguida te atendera un humano."
+    var payload = ""
+    var msg = ""
+    if (CustomerSession.get("state") == 1) {
+      if (msg_body == "Ver catálogo"){
+        llevarACatalogo(from_correct_lada, phone_no_id);
+        // Cancelar ver catalogo
+      } else if (msg_body == "Cancelar") {
+        CustomerSession.set("state", 0)
+        payload = buildTextMessage(from_correct_lada, "Gracias por comprar con nosotros, hasta la próxima!");
+        sendMessage(phone_no_id, payload);
+      }
+    } else if (CustomerSession.get("state") == 2) {
+      if (msg_body == "Enviar pedido"){
+        CustomerSession.set("state", 0);
+        msg = "Pedido enviado!";
+        payload = buildTextMessage(from_correct_lada, msg);
+        sendMessage(phone_no_id, payload);
+        // cancerlar pedido
+      } else if (msg_body == "Modificar pedido") {
+        llevarACatalogo(from_correct_lada, phone_no_id);
+      } else if (msg_body == "Cancelar") {
+        CustomerSession.set("state", 0);
+        console.log(CustomerSession.get("state"));
+        payload = buildTextMessage(from_correct_lada, "Pedido cancelado. Gracias por comprar con nosotros, hasta la próxima!");
+        sendMessage(phone_no_id, payload);
+      }
     }
-    data = buildTextMessage(from_correct_lada, texto)
-    //var data_botones = buildButtonsMessagePayload("respuesta", "escogiste " + msg_body, ["yes", "no"], from_correct_lada);
-    var config = getAxiosConfig(phone_no_id, data)
-    console.log(config)
-    
-    axios(config).then(function ({data}) {
-      console.log('Success ' + JSON.stringify(data))
-    })
-    .catch(function (error) {
-      console.log('Error ' + error.message)
-    })
     res.sendStatus(200);
   }
   else {
-    console.log("no jala")
     res.sendStatus(403);
   }
 });
 
-// catch 404 and forward to error handler
-// app.use(function (req, res, next) {
-//   next(createError(404));
-// });
-
-// error handler
+// Error handler
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
