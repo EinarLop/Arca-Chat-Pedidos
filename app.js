@@ -30,10 +30,12 @@ const messagesController = require("./controllers/messages.controller");
 var app = express();
 
 var cors = require("cors");
+
+/*
 app.use(cors({
   origin: 'https://kind-beach-0d52e4b10.2.azurestaticapps.net'
-}));
-/*
+}));*/
+
 var corsOptions = function(req, res, next){ 
   res.header('Access-Control-Allow-Origin', '*'); 
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
@@ -43,7 +45,7 @@ var corsOptions = function(req, res, next){
 }
 
 app.use(corsOptions);
-*/
+
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -139,7 +141,17 @@ app.get("/", (req, res) => {
 
 app.post("/getItems", (req, res) => {
   console.log(req.body);
-  res.json({ poop: "klskl" });
+  console.log("get items")
+  id = req.body.id
+  data = req.body.data
+  total = 0
+  strs = ""
+  for (let i = 0; i < data.length; i++){
+    producto = data[i]
+    strs += producto.name + " " + producto.cost + '\n'
+  }
+  Pedido.set(id, strs)
+  volvioDeCatalogo(id, my_phone_id);
 });
 
 app.get("/meta_wa_callbackurl", (req, res) => {
