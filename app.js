@@ -22,11 +22,16 @@ require("dotenv").config({path: './.env'});
 
 const token = process.env.TOKEN;
 const mytoken = process.env.MYTOKEN;
+const my_phone_id = process.env.PHONE_ID;
 
 const messagesController = require("./controllers/messages.controller");
 var app = express();
 
 var cors = require("cors");
+app.use(cors({
+  origin: 'https://kind-beach-0d52e4b10.2.azurestaticapps.net'
+}));
+/*
 var corsOptions = function(req, res, next){ 
   res.header('Access-Control-Allow-Origin', '*'); 
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
@@ -36,6 +41,7 @@ var corsOptions = function(req, res, next){
 }
 
 app.use(corsOptions);
+*/
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -220,7 +226,7 @@ app.post("/getItems", (req, res) => {
   strs += producto.name + " " + producto.cost + '\n'
  }
  Pedido.set(id, strs)
- volvioDeCatalogo(id, "109220055323986");
+ volvioDeCatalogo(id, my_phone_id);
 });
 
 
