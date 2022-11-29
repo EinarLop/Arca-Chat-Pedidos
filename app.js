@@ -27,7 +27,15 @@ const messagesController = require("./controllers/messages.controller");
 var app = express();
 
 var cors = require("cors");
-app.use(cors());
+var corsOptions = function(req, res, next){ 
+  res.header('Access-Control-Allow-Origin', '*'); 
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 
+  'Content-Type, Authorization, Content-Length, X-Requested-With');
+   next();
+}
+
+app.use(corsOptions);
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -119,24 +127,6 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.post("/getItems", (req, res) => {
-  console.log(req.body);
-  /*
-  id: '123skajdkjakjdkj',
-  data: [ { name: 'Agua Ciel Exprim Pina Jengibre 1L', cost: '$78.00' } ]
-  }
-  */
- id = req.body.id
- data = req.body.data
- total = 0
- strs = ""
- for (let i = 0; i < data.length; i++){
-  producto = data[i]
-  strs += producto.name + " " + producto.cost + '\n'
- }
- Pedido.set(id, strs)
-});
-
 app.get('/meta_wa_callbackurl', (req, res) => {
   try {
       console.log('GET: Someone is pinging me!');
@@ -196,22 +186,43 @@ function llevarACatalogo(from_correct_lada, phone_no_id){
   CustomerSession.set("state", 2)
   msg = "Accede al siguiente link para ver el catálogo: https://kind-beach-0d52e4b10.2.azurestaticapps.net/?id=" + from_correct_lada
   payload = buildTextMessage(from_correct_lada, msg)
+  sendMessage(phone_no_id, payload)
+}
+
+function volvioDeCatalogo(from_correct_lada, phone_no_id){
+  CustomerSession.set("state", 3)
+  p = Pedido.get(from_correct_lada)
+  msg = "Listo! Resumen del pedido: \n" + p
+  payload = buildTextMessage(from_correct_lada, msg)
   sendMessagePromise(phone_no_id, payload).then(function ({data}) {
-    msg = "Listo! Resumen del pedido: \n- 1 paq. Coca - Cola 600ml PET 12pzas $245"
-    payload = buildTextMessage(from_correct_lada, msg)
-    sendMessagePromise(phone_no_id, payload).then(function ({data}) {
-      payload = buildButtonsMessagePayload("Confirma tu pedido", "¿Está todo correcto?", ["Enviar pedido", "Modificar pedido", "Cancelar"], from_correct_lada)
-      sendMessage(phone_no_id, payload);
-      console.log('Success ' + JSON.stringify(data))
-    })
-    .catch(function (error) {
-      console.log('Error ' + error.message)
-    })
+    payload = buildButtonsMessagePayload("Confirma tu pedido", "¿Está todo correcto?", ["Enviar pedido", "Modificar pedido", "Cancelar"], from_correct_lada)
+    sendMessage(phone_no_id, payload);
+    console.log('Success ' + JSON.stringify(data))
   })
   .catch(function (error) {
     console.log('Error ' + error.message)
   })
 }
+
+app.post("/getItems", (req, res) => {
+  console.log(req.body);
+  /*
+  id: '123skajdkjakjdkj',
+  data: [ { name: 'Agua Ciel Exprim Pina Jengibre 1L', cost: '$78.00' } ]
+  }
+  */
+ id = req.body.id
+ data = req.body.data
+ total = 0
+ strs = ""
+ for (let i = 0; i < data.length; i++){
+  producto = data[i]
+  strs += producto.name + " " + producto.cost + '\n'
+ }
+ Pedido.set(id, strs)
+ volvioDeCatalogo(id, "109220055323986");
+});
+
 
 app.post("/meta_wa_callbackurl", (req, res) => {
   console.log("llego un webhook. estado:")
@@ -243,9 +254,9 @@ app.post("/meta_wa_callbackurl", (req, res) => {
           payload3 = buildTextMessage(from_correct_lada, "Y nuestros términos y condiciones: https://www.arcacontal.com/inferior/t%C3%A9rminos-legales.aspx");
           sendMessagePromise(phone_no_id, payload3).then(function ({data}) {
             payload4 = buildTextMessage(from_correct_lada, "De continuar con esta conversación, aceptas tanto el aviso de privacidad como nuestros términos y condiciones ✅ ");
-            sendMessagePromise(phone_no_id, payload).then(function ({data}) {
-              payload = buildButtonsMessagePayload("Catálogo", "¿Quieres ver el catálogo de productos?", ["Ver catálogo", "Cancelar"], from_correct_lada);
-              sendMessage(phone_no_id, payload);
+            sendMessagePromise(phone_no_id, payload4).then(function ({data}) {
+              payload5 = buildButtonsMessagePayload("Catálogo", "¿Quieres ver el catálogo de productos?", ["Ver catálogo", "Cancelar"], from_correct_lada);
+              sendMessage(phone_no_id, payload5);
             })
             .catch(function (error) {
               console.log('Error ' + error.message)
@@ -284,7 +295,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
         payload = buildTextMessage(from_correct_lada, "Gracias por comprar con nosotros, hasta la próxima!");
         sendMessage(phone_no_id, payload);
       }
-    } else if (CustomerSession.get("state") == 2) {
+    } else if (CustomerSession.get("state") == 3) {
       if (msg_body == "Enviar pedido"){
         CustomerSession.set("state", 0);
         msg = "Pedido enviado!";
