@@ -237,7 +237,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
 
   console.log(JSON.stringify(body_param, null, 2));
 
-  if (isTextMessage(body_param)) {
+  if (isTextMessage(body_param) && req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id) {
     console.log("text message")
     console.log(CustomerSession.get("state"))
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
@@ -248,7 +248,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     var payload = ""
 
     if (msg_body == "terminar sesion"){
-      CustomerSession.set("state", 0)
+      CustomerSession.set("state", 0);
+      Pedido.clear();
       payload = buildTextMessage(from_correct_lada, "Gracias por comprar con nosotros, hasta la próxima!");
       sendMessage(phone_no_id, payload);
     } else if (CustomerSession.get("state") == 0){
@@ -282,7 +283,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     }
 
     res.sendStatus(200);
-  } else if (isReplyMessage(body_param)){
+  } else if (isReplyMessage(body_param) && req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id){
     console.log("reply message")
     console.log(CustomerSession.get("state"))
     let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
