@@ -10,6 +10,8 @@ CustomerSession.set("state", 0);
 const axios = require("axios");
 require("dotenv").config({ path: "./.env" });
 
+var cors = require("cors");
+
 const token = process.env.TOKEN;
 const mytoken = process.env.MYTOKEN;
 
@@ -20,6 +22,7 @@ app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(cors());
 
 app.use("/messages", messagesController);
 
@@ -103,7 +106,13 @@ function buildButtonsMessagePayload(header, body, buttonTexts, phone_number) {
 
 app.get("/", (req, res) => {
   console.log(mytoken);
-  res.send("Hello!");
+  res.json({ poop: "klskl" });
+  url + idUser;
+});
+
+app.post("/getItems", (req, res) => {
+  console.log(req.body);
+  res.json({ poop: "klskl" });
 });
 
 app.get("/meta_wa_callbackurl", (req, res) => {
