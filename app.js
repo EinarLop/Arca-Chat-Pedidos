@@ -240,23 +240,20 @@ app.post("/meta_wa_callbackurl", (req, res) => {
 
   console.log(JSON.stringify(body_param, null, 2));
 
-  if (isTextMessage(body_param)) {
-    console.log("text message");
-    console.log(CustomerSession.get("state"));
-    let phone_no_id =
-      req.body.entry[0].changes[0].value.metadata.phone_number_id;
-    console.log(req.body.entry[0].changes[0].value.messages[0].from);
+  if (isTextMessage(body_param) && req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id) {
+    console.log("text message")
+    console.log(CustomerSession.get("state"))
+    let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
+    console.log(req.body.entry[0].changes[0].value.messages[0].from)
     let from = req.body.entry[0].changes[0].value.messages[0].from;
     let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
     let from_correct_lada = "52" + from.substring(3);
-    var payload = "";
+    var payload = ""
 
-    if (msg_body == "terminar sesion") {
+    if (msg_body == "terminar sesion"){
       CustomerSession.set("state", 0);
-      payload = buildTextMessage(
-        from_correct_lada,
-        "Gracias por comprar con nosotros, hasta la próxima!"
-      );
+      Pedido.clear();
+      payload = buildTextMessage(from_correct_lada, "Gracias por comprar con nosotros, hasta la próxima!");
       sendMessage(phone_no_id, payload);
     } else if (CustomerSession.get("state") == 0){
       CustomerSession.set("state", 1)
@@ -289,12 +286,11 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     }
 
     res.sendStatus(200);
-  } else if (isReplyMessage(body_param)) {
-    console.log("reply message");
-    console.log(CustomerSession.get("state"));
-    let phone_no_id =
-      req.body.entry[0].changes[0].value.metadata.phone_number_id;
-    console.log(req.body.entry[0].changes[0].value.messages[0].from);
+  } else if (isReplyMessage(body_param) && req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id){
+    console.log("reply message")
+    console.log(CustomerSession.get("state"))
+    let phone_no_id = req.body.entry[0].changes[0].value.metadata.phone_number_id;
+    console.log(req.body.entry[0].changes[0].value.messages[0].from)
     let from = req.body.entry[0].changes[0].value.messages[0].from;
     let msg_body =
       req.body.entry[0].changes[0].value.messages[0].interactive.button_reply
