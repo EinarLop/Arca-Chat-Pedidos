@@ -132,7 +132,7 @@ function buildButtonsMessagePayload(header, body, buttonTexts, phone_number) {
 }
 
 app.get("/", (req, res) => {
-  console.log("Hello world");
+  res.send("Hello world");
 });
 
 app.post("/getItems", (req, res) => {
