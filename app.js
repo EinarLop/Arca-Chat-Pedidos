@@ -148,6 +148,7 @@ app.post("/getItems", (req, res) => {
   }
   Pedido.set(id, strs);
   volvioDeCatalogo(id, my_phone_id);
+  res.send("Data:" + req.body.data.toString());
 });
 
 app.get("/meta_wa_callbackurl", (req, res) => {
@@ -387,10 +388,9 @@ app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
-
   // render the error page
   res.status(err.status || 500);
-  res.render("error");
+  res.send("Error: " + err);
 });
 
 module.exports = app;
