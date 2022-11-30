@@ -136,8 +136,6 @@ app.get("/", (req, res) => {
 });
 
 app.post("/getItems", (req, res) => {
-  console.log(req.body);
-  console.log("get items");
   id = req.body.id;
   data = req.body.data;
   total = 0;
@@ -147,8 +145,8 @@ app.post("/getItems", (req, res) => {
     strs += producto.name + " " + producto.cost + "\n";
   }
   Pedido.set(id, strs);
-  volvioDeCatalogo(id, my_phone_id);
-  res.send("Data:" + req.body.data.toString());
+  // volvioDeCatalogo(id, my_phone_id);
+  console.log("Data:" + strs);
 });
 
 app.get("/meta_wa_callbackurl", (req, res) => {
@@ -230,24 +228,25 @@ function volvioDeCatalogo(from_correct_lada, phone_no_id) {
     });
 }
 
-app.post("/getItems", (req, res) => {
-  console.log(req.body);
-  /*
-  id: '123skajdkjakjdkj',
-  data: [ { name: 'Agua Ciel Exprim Pina Jengibre 1L', cost: '$78.00' } ]
-  }
-  */
-  id = req.body.id;
-  data = req.body.data;
-  total = 0;
-  strs = "";
-  for (let i = 0; i < data.length; i++) {
-    producto = data[i];
-    strs += producto.name + " " + producto.cost + "\n";
-  }
-  Pedido.set(id, strs);
-  volvioDeCatalogo(id, my_phone_id);
-});
+// app.post("/getItems", (req, res) => {
+//   console.log(req.body);
+//   /*
+//   id: '123skajdkjakjdkj',
+//   data: [ { name: 'Agua Ciel Exprim Pina Jengibre 1L', cost: '$78.00' } ]
+//   }
+//   */
+//   id = req.body.id;
+//   data = req.body.data;
+//   total = 0;
+//   strs = "";
+//   for (let i = 0; i < data.length; i++) {
+//     producto = data[i];
+//     strs += producto.name + " " + producto.cost + "\n";
+//   }
+//   Pedido.set(id, strs);
+//   // volvioDeCatalogo(id, my_phone_id);
+//   res.send("Data:" + data.toString());
+// });
 
 app.post("/meta_wa_callbackurl", (req, res) => {
   console.log("llego un webhook. estado:");
@@ -390,7 +389,7 @@ app.use(function (err, req, res, next) {
   res.locals.error = req.app.get("env") === "development" ? err : {};
   // render the error page
   res.status(err.status || 500);
-  res.send("Error: " + err);
+  res.json({ error: err });
 });
 
 module.exports = app;
