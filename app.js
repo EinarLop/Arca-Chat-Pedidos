@@ -25,7 +25,6 @@ const my_phone_id = process.env.PHONE_ID;
 
 const messagesController = require("./controllers/messages.controller");
 var app = express();
-
 var cors = require("cors");
 
 /*
@@ -34,16 +33,14 @@ app.use(cors({
 }));*/
 
 var corsOptions = function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, Content-Length, X-Requested-With"
-  );
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000/");
+  res.header("Content-Type", "application/json");
   next();
 };
 
 app.use(corsOptions);
+
+// app.use(cors());
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -145,8 +142,9 @@ app.post("/getItems", (req, res) => {
     strs += producto.name + " " + producto.cost + "\n";
   }
   Pedido.set(id, strs);
-  // volvioDeCatalogo(id, my_phone_id);
+  volvioDeCatalogo(id, my_phone_id);
   console.log("Data:" + strs);
+  res.send("Done");
 });
 
 app.get("/meta_wa_callbackurl", (req, res) => {
