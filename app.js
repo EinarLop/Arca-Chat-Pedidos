@@ -12,7 +12,6 @@ id: '123skajdkjakjdkj',
   data: [ { name: 'Agua Ciel Exprim Pina Jengibre 1L', cost: '$78.00' } ]
 }
 */
-CustomerSession.set("state", 0);
 
 const axios = require("axios");
 require("dotenv").config({ path: "./.env" });
@@ -198,7 +197,7 @@ function sendMessagePromise(phone_no_id, payload) {
 }
 
 function llevarACatalogo(from_correct_lada, phone_no_id) {
-  CustomerSession.set("state", 2);
+  CustomerSession.set(from_correct_lada, 2);
   msg =
     "Accede al siguiente link para ver el catálogo: https://kind-beach-0d52e4b10.2.azurestaticapps.net/?id=" +
     from_correct_lada;
@@ -207,7 +206,7 @@ function llevarACatalogo(from_correct_lada, phone_no_id) {
 }
 
 function volvioDeCatalogo(from_correct_lada, phone_no_id) {
-  CustomerSession.set("state", 3);
+  CustomerSession.set(from_correct_lada, 3);
   p = Pedido.get(from_correct_lada);
   msg = "Listo! Resumen del pedido: \n" + p;
   payload = buildTextMessage(from_correct_lada, msg);
@@ -248,8 +247,7 @@ function volvioDeCatalogo(from_correct_lada, phone_no_id) {
 // });
 
 app.post("/meta_wa_callbackurl", (req, res) => {
-  console.log("llego un webhook. estado:");
-  console.log(CustomerSession.get("state"));
+  console.log("llego un webhook a /meta_wa_callbackurl");
   let body_param = req.body;
 
   console.log(JSON.stringify(body_param, null, 2));
@@ -259,7 +257,6 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id
   ) {
     console.log("text message");
-    console.log(CustomerSession.get("state"));
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from);
@@ -267,17 +264,20 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
     let from_correct_lada = "52" + from.substring(3);
     var payload = "";
+    if (!CustomerSession.has(from_correct_lada)){
+      CustomerSession.set(from_correct_lada, 0);
+    }
 
     if (msg_body == "terminar sesion") {
-      CustomerSession.set("state", 0);
+      CustomerSession.set(from_correct_lada, 0);
       Pedido.clear();
       payload = buildTextMessage(
         from_correct_lada,
         "Gracias por comprar con nosotros, hasta la próxima!"
       );
       sendMessage(phone_no_id, payload);
-    } else if (CustomerSession.get("state") == 0) {
-      CustomerSession.set("state", 1);
+    } else if (CustomerSession.get(from_correct_lada) == 0) {
+      CustomerSession.set(from_correct_lada, 1);
       payload = buildTextMessage(
         from_correct_lada,
         "Hola! Soy *Arcabot*, el asistente virtual de Arca Continental, y estoy aquí para tomar tu pedido 😁"
@@ -333,7 +333,6 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id
   ) {
     console.log("reply message");
-    console.log(CustomerSession.get("state"));
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from);
@@ -344,21 +343,21 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     let from_correct_lada = "52" + from.substring(3);
     var payload = "";
     var msg = "";
-    if (CustomerSession.get("state") == 1) {
+    if (CustomerSession.get(from_correct_lada) == 1) {
       if (msg_body == "Ver catálogo") {
         llevarACatalogo(from_correct_lada, phone_no_id);
         // Cancelar ver catalogo
       } else if (msg_body == "Cancelar") {
-        CustomerSession.set("state", 0);
+        CustomerSession.set(from_correct_lada, 0);
         payload = buildTextMessage(
           from_correct_lada,
           "Gracias por comprar con nosotros, hasta la próxima!"
         );
         sendMessage(phone_no_id, payload);
       }
-    } else if (CustomerSession.get("state") == 3) {
+    } else if (CustomerSession.get(from_correct_lada) == 3) {
       if (msg_body == "Enviar pedido") {
-        CustomerSession.set("state", 0);
+        CustomerSession.set(from_correct_lada, 0);
         msg = "Pedido enviado!";
         payload = buildTextMessage(from_correct_lada, msg);
         sendMessage(phone_no_id, payload);
@@ -366,8 +365,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
       } else if (msg_body == "Modificar pedido") {
         llevarACatalogo(from_correct_lada, phone_no_id);
       } else if (msg_body == "Cancelar") {
-        CustomerSession.set("state", 0);
-        console.log(CustomerSession.get("state"));
+        CustomerSession.set(from_correct_lada, 0);
+        console.log(CustomerSession.get(from_correct_lada));
         payload = buildTextMessage(
           from_correct_lada,
           "Pedido cancelado. Gracias por comprar con nosotros, hasta la próxima!"
