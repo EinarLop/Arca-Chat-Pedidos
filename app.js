@@ -141,6 +141,7 @@ app.post("/getItems", (req, res) => {
     producto = data[i];
     strs += producto.name + " " + producto.cost + "\n";
   }
+
   Pedido.set(id, strs);
   volvioDeCatalogo(id, my_phone_id);
   console.log("Data:" + strs);
@@ -219,10 +220,10 @@ function volvioDeCatalogo(from_correct_lada, phone_no_id) {
         from_correct_lada
       );
       sendMessage(phone_no_id, payload);
-      console.log("Success " + JSON.stringify(data));
+      console.log("Success from catalogo " + JSON.stringify(data));
     })
     .catch(function (error) {
-      console.log("Error " + error.message);
+      console.log("Error from catalogo " + error.message);
     });
 }
 
@@ -380,14 +381,13 @@ app.post("/meta_wa_callbackurl", (req, res) => {
   }
 });
 
-// Error handler
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
   // render the error page
   res.status(err.status || 500);
-  res.json({ error: err });
+  res.json({ error: err.Authorization, popo: "sss" });
 });
 
 module.exports = app;
