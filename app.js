@@ -338,8 +338,6 @@ app.post("/meta_wa_callbackurl", (req, res) => {
           console.log("Error " + error.message);
         });
     }
-
-    res.sendStatus(200);
   } else if (
     isReplyMessage(body_param) &&
     req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id
@@ -390,10 +388,9 @@ app.post("/meta_wa_callbackurl", (req, res) => {
         sendMessage(phone_no_id, payload);
       }
     }
-    res.sendStatus(200);
   } else {
-    res.sendStatus(403);
   }
+  res.sendStatus(200);
 });
 
 app.use(function (err, req, res, next) {
