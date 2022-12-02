@@ -257,6 +257,9 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id
   ) {
     console.log("text message");
+    console.log("MY PHONE ID")
+    console.log(my_phone_id)
+
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from);
@@ -333,6 +336,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id
   ) {
     console.log("reply message");
+    console.log("MY PHONE ID")
+    console.log(my_phone_id)
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from);
