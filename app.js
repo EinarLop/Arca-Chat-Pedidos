@@ -277,8 +277,10 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     let from_correct_lada = "52" + from.substring(3);
     var payload = "";
     if (!CustomerSession.has(from_correct_lada)){
+      console.log("no existia")
       CustomerSession.set(from_correct_lada, 0);
     }
+    printCustomerSession()
 
     if (msg_body == "terminar sesion") {
       CustomerSession.set(from_correct_lada, 0);
