@@ -246,6 +246,14 @@ function volvioDeCatalogo(from_correct_lada, phone_no_id) {
 //   res.send("Data:" + data.toString());
 // });
 
+function printCustomerSession(){
+  console.log("------- CUSTOMER SESSION ------")
+  var keys = CustomerSession.keys(cust);
+  keys.forEach(key=>{
+    console.log(key + '|' + cust[key]);
+  });
+}
+
 app.post("/meta_wa_callbackurl", (req, res) => {
   console.log("llego un webhook a /meta_wa_callbackurl");
   let body_param = req.body;
@@ -259,6 +267,7 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     console.log("text message");
     console.log("MY PHONE ID")
     console.log(my_phone_id)
+    printCustomerSession()
 
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
@@ -338,6 +347,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     console.log("reply message");
     console.log("MY PHONE ID")
     console.log(my_phone_id)
+    printCustomerSession()
+
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from);
