@@ -246,14 +246,6 @@ function volvioDeCatalogo(from_correct_lada, phone_no_id) {
 //   res.send("Data:" + data.toString());
 // });
 
-function printCustomerSession(){
-  console.log("------- CUSTOMER SESSION ------")
-  var keys = CustomerSession.keys(cust);
-  keys.forEach(key=>{
-    console.log(key + '|' + cust[key]);
-  });
-}
-
 app.post("/meta_wa_callbackurl", (req, res) => {
   console.log("llego un webhook a /meta_wa_callbackurl");
   let body_param = req.body;
@@ -265,10 +257,6 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id
   ) {
     console.log("text message");
-    console.log("MY PHONE ID")
-    console.log(my_phone_id)
-    printCustomerSession()
-
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from);
@@ -277,10 +265,8 @@ app.post("/meta_wa_callbackurl", (req, res) => {
     let from_correct_lada = "52" + from.substring(3);
     var payload = "";
     if (!CustomerSession.has(from_correct_lada)){
-      console.log("no existia")
       CustomerSession.set(from_correct_lada, 0);
     }
-    printCustomerSession()
 
     if (msg_body == "terminar sesion") {
       CustomerSession.set(from_correct_lada, 0);
@@ -340,15 +326,13 @@ app.post("/meta_wa_callbackurl", (req, res) => {
           console.log("Error " + error.message);
         });
     }
+
+    res.sendStatus(200);
   } else if (
     isReplyMessage(body_param) &&
     req.body.entry[0].changes[0].value.metadata.phone_number_id == my_phone_id
   ) {
     console.log("reply message");
-    console.log("MY PHONE ID")
-    console.log(my_phone_id)
-    printCustomerSession()
-
     let phone_no_id =
       req.body.entry[0].changes[0].value.metadata.phone_number_id;
     console.log(req.body.entry[0].changes[0].value.messages[0].from);
@@ -390,9 +374,10 @@ app.post("/meta_wa_callbackurl", (req, res) => {
         sendMessage(phone_no_id, payload);
       }
     }
+    res.sendStatus(200);
   } else {
+    res.sendStatus(403);
   }
-  res.sendStatus(200);
 });
 
 app.use(function (err, req, res, next) {
